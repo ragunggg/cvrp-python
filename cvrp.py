@@ -7,38 +7,6 @@ import random
 import folium
 import networkx as nx
 
-# Defining the map boundaries 
-north, east, south, west = -6.8686, 107.636, -6.9181, 107.5862
-
-# Downloading the map as a graph object 
-G = ox.graph_from_bbox(north, south, east, west, network_type = 'drive',simplify=True) 
-
-# customer count ('0' is depot) 
-customer_count = 10
-
-# the number of vehicle
-vehicle_count = 4
-
-# the capacity of vehicle
-vehicle_capacity = [50,45,40,60]
-
-# fix random seed
-np.random.seed(seed=777)
-
-# set depot latitude and longitude
-depot_latitude = -6.9073
-depot_longitude = 107.6181
-
-# make dataframe which contains vending machine location and demand
-df = pd.DataFrame({"latitude":np.random.normal(depot_latitude, 0.007, customer_count), 
-                   "longitude":np.random.normal(depot_longitude, 0.007, customer_count), 
-                   "demand":np.random.randint(10, 20, customer_count)})
-
-# set the depot as the center and make demand 0 ('0' = depot)
-df.latitude.iloc[0] = depot_latitude
-df.longitude.iloc[0] = depot_longitude
-df.demand.iloc[0] = 0
-
 class folium_route(object):
   def __init__(self,G,start,end):
     self.H = G.copy()
@@ -76,8 +44,6 @@ def _distance_calculator(G,_df):
     
     return _distance_result
 
-distance = _distance_calculator(G, df)
-
 def draw_image(split_chromosome):
 	"""
 	visualization : plotting with matplolib
@@ -106,14 +72,6 @@ def partitions_num(n, L, U):
     for i in range(L, n//2 + 1):
         for p in partitions_num(n-i, i, U):
             yield [i] + p
-
-max_capacity = max(vehicle_capacity)
-min_capacity = min(vehicle_capacity)
-max_demand = max(df.demand)
-min_demand = min(df.demand.iloc[1:])
-max_client = math.floor(max_capacity/min_demand)
-min_client = math.ceil(min_capacity/max_capacity)
-partitions = list(partitions_num(customer_count-1,min_client,max_client))
 
 class Individual:
 	def __init__(self, depot=0, chromosome=None):
@@ -322,5 +280,52 @@ class Environment:
 	def _selectrank(self):
 		return random.randint(0,self.size - 1)
 
-ev = Environment(size=1000, maxgenerations=100)
-ev.run()
+def main():
+	global df, customer_count, vehicle_count, vehicle_capacity, partitions, distance
+
+	# Defining the map boundaries 
+	north, east, south, west = -6.8686, 107.636, -6.9181, 107.5862
+
+	# Downloading the map as a graph object 
+	G = ox.graph_from_bbox(north, south, east, west, network_type = 'drive',simplify=True) 
+
+	# customer count ('0' is depot) 
+	customer_count = 10
+
+	# the number of vehicle
+	vehicle_count = 4
+
+	# the capacity of vehicle
+	vehicle_capacity = [50,45,40,60]
+
+	# fix random seed
+	np.random.seed(seed=777)
+
+	# set depot latitude and longitude
+	depot_latitude = -6.9073
+	depot_longitude = 107.6181
+
+	# make dataframe which contains vending machine location and demand
+	df = pd.DataFrame({"latitude":np.random.normal(depot_latitude, 0.007, customer_count), 
+					"longitude":np.random.normal(depot_longitude, 0.007, customer_count), 
+					"demand":np.random.randint(10, 20, customer_count)})
+
+	# set the depot as the center and make demand 0 ('0' = depot)
+	df.latitude.iloc[0] = depot_latitude
+	df.longitude.iloc[0] = depot_longitude
+	df.demand.iloc[0] = 0
+
+	distance = _distance_calculator(G, df)
+
+	max_capacity = max(vehicle_capacity)
+	min_capacity = min(vehicle_capacity)
+	max_demand = max(df.demand)
+	min_demand = min(df.demand.iloc[1:])
+	max_client = math.floor(max_capacity/min_demand)
+	min_client = math.ceil(min_capacity/max_capacity)
+	partitions = list(partitions_num(customer_count-1,min_client,max_client))
+	ev = Environment(size=1000, maxgenerations=100)
+	ev.run()
+
+if __name__ == '__main__':
+	main()
